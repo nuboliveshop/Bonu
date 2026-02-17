@@ -7,6 +7,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAg5tJ0nsqlALhe2E4DMZCZ3D6eqO5Ry2g",
+            authDomain: "bonu-842ec.firebaseapp.com",
+            projectId: "bonu-842ec",
+            storageBucket: "bonu-842ec.firebasestorage.app",
+            messagingSenderId: "426024756838",
+            appId: "1:426024756838:web:eff37677df18d0170f2fa7",
+            measurementId: "G-WBX4H21LZV"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Compartir con el resto del script
+        window.db = db;
+        window.fs = { collection, addDoc, getDocs, query, orderBy };
+    </script>
+
     <style>
         :root {
             --nubo-green: #2ecc71;
@@ -24,7 +47,6 @@
             --font-size: 14px;
         }
 
-        /* MEJORA: MODO OSCURO Y TAMAÑOS */
         body.dark-mode {
             --bg: #1a1a1a;
             --text-color: #f4f4f4;
@@ -132,6 +154,7 @@
                 </script>
             </div>
         </div>
+        <div id="real-products-container" class="masonry-grid" style="margin-bottom: 20px;"></div>
         <div id="feed-container"></div>
     </div>
 
@@ -161,7 +184,40 @@
             { id: 'vendido', title: 'Lo Más Vendido', icon: 'trending-up', headClass: 'section-vendido', btnClass: 'btn-vendido' }
         ];
 
-        window.onload = () => { lucide.createIcons(); loadMenu(); initHomeFeed(); };
+        window.onload = () => { lucide.createIcons(); loadMenu(); initHomeFeed(); loadRealProducts(); };
+
+        // --- NUEVA FUNCIÓN: CARGAR DE FIREBASE ---
+        async function loadRealProducts() {
+            const container = document.getElementById('real-products-container');
+            try {
+                const q = window.fs.query(window.fs.collection(window.db, "productos"), window.fs.orderBy("fecha", "desc"));
+                const snap = await window.fs.getDocs(q);
+                container.innerHTML = "";
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    container.innerHTML += `<div class="card"><img src="${p.img || 'https://picsum.photos/300'}"><h4>${p.nombre}</h4><p class="price">$${p.precio}</p><button class="btn-add btn-super" onclick="addToCart('${p.nombre}', ${p.precio}, '${p.img}')">AÑADIR</button></div>`;
+                });
+            } catch(e) { console.log("Aún no hay productos en la nube."); }
+        }
+
+        // --- NUEVA FUNCIÓN: GUARDAR EN FIREBASE ---
+        async function firebaseSaveProduct() {
+            const nombre = document.getElementById('admin-p-name').value;
+            const precio = document.getElementById('admin-p-price').value;
+            // Para demo usamos una imagen aleatoria si no suben archivo
+            const img = `https://picsum.photos/300/300?sig=${Math.floor(Math.random()*100)}`;
+
+            if(!nombre || !precio) return alert("Nombre y Precio obligatorios");
+
+            try {
+                await window.fs.addDoc(window.fs.collection(window.db, "productos"), {
+                    nombre, precio, img, fecha: new Date()
+                });
+                alert("¡Producto guardado exitosamente en Firebase!");
+                showHome();
+                loadRealProducts();
+            } catch(e) { alert("Error al guardar: " + e.message); }
+        }
 
         function loadMenu() {
             const list = document.getElementById('cat-list');
@@ -216,7 +272,6 @@
             if(cart.length > 0) {
                 cont.innerHTML += `<div style="margin-top:20px; padding:20px; background:var(--card-bg); border-radius:15px; border: 1px solid #eee;">
                     <h3>Total: $${total.toFixed(2)}</h3>
-                    <p style="margin:10px 0; font-size:12px; color:gray;">${currentLang === 'es' ? 'Selecciona tu método de pago seguro:' : 'Select your secure payment method:'}</p>
                     <button class="btn-add" style="background:#0070ba; margin-bottom:8px;" onclick="startInternalCheckout('PayPal')">PayPal</button>
                     <button class="btn-add" style="background:#009ee3; margin-bottom:8px;" onclick="startInternalCheckout('Mercado Pago')">Mercado Pago</button>
                     <button class="btn-add" style="background:#635bff;" onclick="startInternalCheckout('Stripe')">Stripe</button>
@@ -226,144 +281,52 @@
 
         function startInternalCheckout(method) {
             const cont = document.getElementById('page-content');
-            cont.innerHTML = `<h2>Pasarela: ${method}</h2><div class="admin-section" style="margin-top:20px;"><label class="admin-label">Titular</label><input type="text" class="admin-input"><label class="admin-label">Tarjeta</label><input type="text" class="admin-input" placeholder="XXXX XXXX XXXX XXXX"><div style="display:flex; gap:10px; margin-top:10px;"><input type="text" class="admin-input" placeholder="MM/AA"><input type="text" class="admin-input" placeholder="CVC"></div><button class="btn-add btn-super" style="margin-top:20px;" onclick="completeInternalOrder()">CONFIRMAR PAGO</button></div>`;
+            cont.innerHTML = `<h2>Pasarela: ${method}</h2><div class="admin-section" style="margin-top:20px;"><label class="admin-label">Titular</label><input type="text" class="admin-input"><label class="admin-label">Tarjeta</label><input type="text" class="admin-input" placeholder="XXXX XXXX XXXX XXXX"><button class="btn-add btn-super" style="margin-top:20px;" onclick="completeInternalOrder()">CONFIRMAR PAGO</button></div>`;
         }
 
-        function completeInternalOrder() { 
-            alert(currentLang === 'es' ? "Pago Procesado con Éxito" : "Payment Processed Successfully"); 
-            cart = []; 
-            document.getElementById('cart-val').innerText = "0"; 
-            showHome(); 
-        }
-
+        function completeInternalOrder() { alert(currentLang === 'es' ? "Pago Procesado" : "Payment Processed"); cart = []; document.getElementById('cart-val').innerText = "0"; showHome(); }
         function removeFromCart(idx) { cart.splice(idx, 1); document.getElementById('cart-val').innerText = cart.length; renderCart(); }
-
         function accessAdmin() { if(prompt("Clave:") === "LOBO1203@") renderAdmin(); }
 
-        // --- FUNCIONES NUEVAS: AFILIADOS ---
         function renderAfiliados() {
             document.getElementById('home-view').style.display = 'none';
             document.getElementById('page-view').style.display = 'block';
             const cont = document.getElementById('page-content');
-            cont.innerHTML = `
-                <h2>${currentLang === 'es' ? 'Programa de Afiliados' : 'Affiliate Program'}</h2>
-                <div class="admin-section">
-                    <h3>${currentLang === 'es' ? 'Genera tu enlace' : 'Generate your link'}</h3>
-                    <p>${currentLang === 'es' ? 'Ingresa el nombre del producto para promocionar:' : 'Enter product name to promote:'}</p>
-                    <input type="text" id="af-input" class="admin-input" placeholder="Ej: Reloj Bonu">
-                    <button class="btn-add btn-super" onclick="generateLink()">${currentLang === 'es' ? 'CREAR LINK' : 'CREATE LINK'}</button>
-                    <div id="af-result" style="margin-top:15px; font-weight:bold; color:var(--nubo-dark);"></div>
-                </div>`;
+            cont.innerHTML = `<h2>Programa de Afiliados</h2><div class="admin-section"><input type="text" id="af-input" class="admin-input" placeholder="Nombre producto"><button class="btn-add btn-super" onclick="generateLink()">CREAR LINK</button><div id="af-result" style="margin-top:15px; font-weight:bold;"></div></div>`;
         }
+        function generateLink() { document.getElementById('af-result').innerText = `bonu.shop/ref=${document.getElementById('af-input').value}`; }
 
-        function generateLink() {
-            const val = document.getElementById('af-input').value;
-            if(val) document.getElementById('af-result').innerText = `bonu.shop/p?item=${val.replace(/\s/g, '_')}&ref=user_id`;
-        }
-
-        // --- FUNCIONES NUEVAS: CONFIGURACIÓN ---
         function renderConfig() {
             document.getElementById('home-view').style.display = 'none';
             document.getElementById('page-view').style.display = 'block';
-            const cont = document.getElementById('page-content');
-            cont.innerHTML = `
-                <h2>🛠️ ${currentLang === 'es' ? 'Configuración' : 'Settings'}</h2>
-                <div class="admin-section">
-                    <label class="admin-label">Tamaño de Letra / Font Size</label>
-                    <div style="display:flex; gap:10px; margin-bottom:20px;">
-                        <button class="btn-add btn-vendido" onclick="setFont('f-normal')">Normal</button>
-                        <button class="btn-add btn-vendido" onclick="setFont('f-medium')">Mediana</button>
-                        <button class="btn-add btn-vendido" onclick="setFont('f-large')">Grande</button>
-                    </div>
-
-                    <label class="admin-label">Modo / Theme</label>
-                    <div style="display:flex; gap:10px; margin-bottom:20px;">
-                        <button class="btn-add btn-super" onclick="setTheme(false)">🌞 Luz</button>
-                        <button class="btn-add btn-mas-vendido" onclick="setTheme(true)" style="background:#222">🌙 Oscuro</button>
-                    </div>
-
-                    <label class="admin-label">Lenguaje / Language</label>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn-add btn-especiales" onclick="setLang('es')">Español</button>
-                        <button class="btn-add btn-especiales" onclick="setLang('en')">English</button>
-                    </div>
-                </div>`;
+            document.getElementById('page-content').innerHTML = `<h2>🛠️ Configuración</h2><div class="admin-section"><button class="btn-add btn-super" onclick="setTheme(true)">🌙 Modo Oscuro</button><button class="btn-add btn-super" onclick="setTheme(false)" style="margin-top:10px;">🌞 Modo Luz</button></div>`;
         }
+        function setTheme(dark) { if(dark) document.body.classList.add('dark-mode'); else document.body.classList.remove('dark-mode'); }
 
-        function setFont(cls) {
-            document.body.className = cls + (document.body.classList.contains('dark-mode') ? ' dark-mode' : '');
-        }
-
-        function setTheme(dark) {
-            if(dark) document.body.classList.add('dark-mode');
-            else document.body.classList.remove('dark-mode');
-        }
-
-        function setLang(lang) {
-            currentLang = lang;
-            document.getElementById('txt-menu-cat').innerText = lang === 'es' ? 'Menú y Categorías' : 'Menu & Categories';
-            document.getElementById('txt-volver').innerText = lang === 'es' ? 'Volver' : 'Back';
-            document.getElementById('search-input').placeholder = lang === 'es' ? 'Buscar en Bonü...' : 'Search in Bonu...';
-            document.getElementById('txt-afiliado-footer').innerText = lang === 'es' ? 'Programa de Afiliados' : 'Affiliate Program';
-            renderConfig();
-        }
-
-        // --- CÓDIGO ORIGINAL ADMIN (SIN TOCAR) ---
+        // --- ADMIN ACTUALIZADO PARA FIREBASE ---
         function renderAdmin() {
             document.getElementById('home-view').style.display = 'none';
             document.getElementById('page-view').style.display = 'block';
             const cont = document.getElementById('page-content');
             cont.innerHTML = `
-                <h2 style="color:var(--azul-real); margin-bottom:20px;">Admin General - Gestión Nubo</h2>
+                <h2 style="color:var(--azul-real); margin-bottom:20px;">Admin General</h2>
                 <div class="admin-section">
-                    <h3>1. Subir Producto Propio</h3>
+                    <h3>1. Subir Producto Real (Firebase)</h3>
                     <div class="form-grid">
-                        <div><label class="admin-label">Imágenes (Máx 6)</label><input type="file" multiple class="admin-input"></div>
-                        <div><label class="admin-label">Nombre</label><input type="text" class="admin-input"></div>
-                        <div><label class="admin-label">Precio</label><input type="number" class="admin-input"></div>
-                        <div><label class="admin-label">Tallas</label><input type="text" class="admin-input" placeholder="S, M, L..."></div>
-                        <div><label class="admin-label">Colores</label><input type="text" class="admin-input"></div>
-                        <div><label class="admin-label">Medidas</label><input type="text" class="admin-input"></div>
-                        <div><label class="admin-label">Descuento</label><select class="admin-input">${[10,15,20,25,30,35,40,45,50].map(d => `<option>${d}%</option>`).join('')}</select></div>
+                        <div><label class="admin-label">Nombre</label><input type="text" id="admin-p-name" class="admin-input"></div>
+                        <div><label class="admin-label">Precio</label><input type="number" id="admin-p-price" class="admin-input"></div>
                     </div>
-                    <textarea class="admin-input" placeholder="Descripción del producto" style="height:60px;"></textarea>
-                    <button class="btn-add btn-super" style="margin-top:10px;">GUARDAR PRODUCTO</button>
+                    <button class="btn-add btn-super" style="margin-top:10px;" onclick="firebaseSaveProduct()">GUARDAR EN LA NUBE</button>
                 </div>
                 <div class="admin-section">
-                    <h3>2. Enlaces de Afiliado</h3>
-                    <div class="form-grid">
-                        <div><label class="admin-label">Plataforma</label><select class="admin-input"><option>Amazon</option><option>Ali Express</option><option>eBay</option><option>Otras</option></select></div>
-                        <div><label class="admin-label">URL de Afiliado</label><input type="text" class="admin-input" placeholder="https://..."></div>
-                    </div>
-                    <button class="btn-add btn-especiales">VINCULAR ENLACE</button>
-                </div>
-                <div class="admin-section">
-                    <h3>3. Estadísticas Avanzadas</h3>
+                    <h3>Estadísticas Rápidas</h3>
                     <div class="analytics-container">
-                        <div class="stat-card"><h4>Ganancias</h4><canvas id="chart1"></canvas></div>
-                        <div class="stat-card"><h4>Más Vendidos</h4><canvas id="chart2"></canvas></div>
-                        <div class="stat-card"><h4>Mejor Proveedor</h4><canvas id="chart3"></canvas></div>
-                        <div class="stat-card"><h4>Tráfico Diario</h4><canvas id="chart4"></canvas></div>
-                        <div class="stat-card"><h4>Ventas</h4><canvas id="chart5"></canvas></div>
-                        <div class="stat-card"><h4>Mejores Compradores</h4><canvas id="chart6"></canvas></div>
+                        <div class="stat-card"><h4>Ventas</h4><canvas id="chart1"></canvas></div>
+                        <div class="stat-card"><h4>Visitas</h4><canvas id="chart2"></canvas></div>
                     </div>
-                </div>
-                <div class="admin-section">
-                    <h3>4. Pasarelas de Pago (Keys & Passwords)</h3>
-                    <div class="form-grid">
-                        <input type="password" class="admin-input" placeholder="PayPal Secret Key">
-                        <input type="password" class="admin-input" placeholder="Mercado Pago Access Token">
-                        <input type="password" class="admin-input" placeholder="Stripe Secret Key">
-                    </div>
-                    <button class="btn-add btn-vendido">ACTUALIZAR LLAVES</button>
                 </div>`;
-            const ctxs = ['chart1','chart2','chart3','chart4','chart5','chart6'];
-            ctxs.forEach(id => {
-                new Chart(document.getElementById(id), {
-                    type: id === 'chart2' || id === 'chart6' ? 'bar' : 'line',
-                    data: { labels: ['Ene','Feb','Mar','Abr'], datasets: [{ label: 'Data', data: [12, 19, 10, 15], borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.2)' }] }
-                });
-            });
+            new Chart(document.getElementById('chart1'), { type: 'line', data: { labels: ['Ene','Feb'], datasets: [{ label: 'Ventas', data: [5, 12], borderColor: '#2ecc71' }] } });
+            new Chart(document.getElementById('chart2'), { type: 'bar', data: { labels: ['Ene','Feb'], datasets: [{ label: 'Visitas', data: [40, 90], backgroundColor: '#3498db' }] } });
         }
 
         function showHome() { document.getElementById('home-view').style.display = 'block'; document.getElementById('page-view').style.display = 'none'; }
@@ -371,9 +334,8 @@
         function renderCategory(name) {
             document.getElementById('home-view').style.display = 'none';
             document.getElementById('page-view').style.display = 'block';
-            document.getElementById('page-content').innerHTML = `<h2>${name}</h2><div class="masonry-grid">${Array(12).fill().map(() => createCard({btnClass: 'btn-super'})).join('')}</div>`;
+            document.getElementById('page-content').innerHTML = `<h2>${name}</h2><div class="masonry-grid">${Array(6).fill().map(() => createCard({btnClass: 'btn-super'})).join('')}</div>`;
             lucide.createIcons();
-            window.scrollTo(0,0);
         }
 
         let currentSlide = 0;
