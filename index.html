@@ -48,16 +48,16 @@
         header { background: var(--nubo-green); padding: 10px 4%; position: sticky; top: 0; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .header-top { display: flex; align-items: center; justify-content: space-between; gap: 15px; position: relative; z-index: 10001; }
         
-        /* LOGO CIRCULAR OPTIMIZADO */
+        /* LOGO HEADER OPTIMIZADO */
         .logo-img { 
-            height: 75px; 
-            width: 75px; 
+            height: 65px; 
+            width: 65px; 
             cursor: pointer; 
             border-radius: 50%; 
-            background: vibrant green; 
+            background: #2ecc71; 
             object-fit: cover; 
-            border: 0px solid orange;
             flex-shrink: 0;
+            display: block;
         }
         
         .search-container { flex-grow: 1; position: relative; max-width: 500px; }
@@ -116,6 +116,17 @@
         .legal-links { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 15px; font-size: 11px; }
         .legal-links a { color: white; text-decoration: none; opacity: 0.9; cursor: pointer; }
 
+        /* LOGO FOOTER OPTIMIZADO */
+        .logo-footer {
+            height: 65px;
+            width: 65px;
+            border-radius: 50%;
+            background: #2ecc71;
+            object-fit: cover;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
         #page-view { display: none; padding: 20px 4%; min-height: 80vh; background: #fdfdfd; }
         .pay-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; color: white; font-weight: 800; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; }
     </style>
@@ -166,7 +177,7 @@
     </div>
 
     <footer>
-        <img src="https://i.ibb.co/KcF5cycr/1770748847094.png" style="height:65px; width:65px; border-radius:50%; background:vibrant green; object-fit:cover; border:0px solid orange;">
+        <img src="https://i.ibb.co/KcF5cycr/1770748847094.png" class="logo-footer">
         <p style="margin-top:10px;">+52 322 270 0732 | bonu.marketplace@gmail.com</p>
         <div class="legal-links">
             <a onclick="renderLegal('terminos')">Términos y Condiciones</a> | 
@@ -196,7 +207,7 @@
 
         function loadMenu() {
             const list = document.getElementById('cat-list');
-            list.innerHTML = ""; // Corregido para GitHub
+            list.innerHTML = ""; 
             cats.forEach(c => list.innerHTML += `<a href="javascript:void(0)" onclick="renderCategory('${c}')">${c}</a>`);
             list.innerHTML += `<a href="javascript:void(0)" class="admin-menu-item" onclick="accessAdmin()">⚙️ Admin General</a>`;
             list.innerHTML += `<a href="javascript:void(0)" class="config-menu-item" onclick="renderConfig()">🛠️ Configuración</a>`;
