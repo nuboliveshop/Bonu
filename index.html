@@ -185,9 +185,10 @@
 
         function loadMenu() {
             const list = document.getElementById('cat-list');
-            cats.forEach(c => list.innerHTML += `<a href="#" onclick="renderCategory('${c}')">${c}</a>`);
-            list.innerHTML += `<a href="#" class="admin-menu-item" onclick="accessAdmin()">⚙️ Admin General</a>`;
-            list.innerHTML += `<a href="#" class="config-menu-item" onclick="renderConfig()">🛠️ Configuración</a>`;
+            list.innerHTML = ""; // Corregido para GitHub
+            cats.forEach(c => list.innerHTML += `<a href="javascript:void(0)" onclick="renderCategory('${c}')">${c}</a>`);
+            list.innerHTML += `<a href="javascript:void(0)" class="admin-menu-item" onclick="accessAdmin()">⚙️ Admin General</a>`;
+            list.innerHTML += `<a href="javascript:void(0)" class="config-menu-item" onclick="renderConfig()">🛠️ Configuración</a>`;
         }
 
         function createCard(sec) {
@@ -284,13 +285,12 @@
                 </div>`;
         }
 
-        // --- LAS DEMÁS FUNCIONES SE MANTIENEN IGUAL SEGÚN TU CÓDIGO ---
         function accessAdmin() { if(prompt("Clave Maestro:") === "LOBO1203@") renderAdmin(); }
         function renderAdmin() {
             document.getElementById('home-view').style.display = 'none';
             document.getElementById('page-view').style.display = 'block';
             let cont = document.getElementById('page-content');
-            cont.innerHTML = `<h2>Admin General</h2><div class="admin-section"><h3>➕ Agregar Nuevo Producto</h3><div class="form-grid"><div style="grid-column: span 2;"><label class="admin-label">Imágenes (6 máx)</label><input type="file" multiple class="admin-input"></div><input type="text" class="admin-input" placeholder="Nombre del producto"><input type="number" class="admin-input" placeholder="Precio"><input type="text" class="admin-input" placeholder="Tallas"><input type="text" class="admin-input" placeholder="Colores"><input type="text" class="admin-input" placeholder="Medidas"><select class="admin-input"><option>Sin Descuento</option>${[10,15,20,25,30,35,40,45,50].map(d => `<option>${d}% de Descuento</option>`).join('')}</select><textarea class="admin-input" placeholder="Descripción" style="grid-column: span 2; height: 80px;"></textarea></div><button class="btn-add btn-super">AGREGAR PRODUCTO</button></div><div class="admin-section"><h3>📊 Analíticas</h3><div class="form-grid">${Array(11).fill().map((_,i)=>`<div><canvas id="gr-${i}"></canvas></div>`).join('')}</div></div><div class="admin-section"><h3>💳 Keys Pago</h3><div class="form-grid"><input type="password" class="admin-input" placeholder="PayPal Key"><input type="password" class="admin-input" placeholder="Mercado Pago Key"><input type="password" class="admin-input" placeholder="Stripe Key"><input type="password" class="admin-input" placeholder="BonuPay Key"></div></div>`;
+            cont.innerHTML = `<h2>Admin General</h2><div class="admin-section"><h3>➕ Agregar Nuevo Producto</h3><div class="form-grid"><div style="grid-column: span 2;"><label class="admin-label">Imágenes (6 máx)</label><input type="file" multiple class="admin-input"></div><input type="text" class="admin-input" placeholder="Nombre del producto"><input type="number" class="admin-input" placeholder="Precio"><input type="text" class="admin-input" placeholder="Tallas"><input type="text" class="admin-input" placeholder="Colores"><input type="text" class="admin-input" placeholder="Medidas"><select class="admin-input"><option>Sin Descuento</option>${[10,15,20,25,30,35,40,45,50].map(d => `<option>${d}% de Descuento</option>`).join('')}</select><textarea class="admin-input" placeholder="Descripción" style="grid-column: span 2; height: 80px;"></textarea></div><button class="btn-add btn-super">AGREGAR PRODUCTO</button></div><div class="admin-section"><h3>📊 Analíticas</h3><div class="form-grid">${Array(11).fill().map((_,i)=>`<div><div style="display:flex; gap:5px; margin-bottom:5px;"><input type="date" class="admin-input" style="font-size:10px; padding:5px;"><input type="date" class="admin-input" style="font-size:10px; padding:5px;"></div><canvas id="gr-${i}"></canvas></div>`).join('')}</div></div><div class="admin-section"><h3>💳 Keys Pago</h3><div class="form-grid"><input type="password" class="admin-input" placeholder="PayPal Key"><input type="password" class="admin-input" placeholder="Mercado Pago Key"><input type="password" class="admin-input" placeholder="Stripe Key"><input type="password" class="admin-input" placeholder="BonuPay Key"></div></div>`;
             setTimeout(() => { for(let i=0; i<11; i++) new Chart(document.getElementById(`gr-${i}`), {type:'line', data:{labels:['1','2','3'], datasets:[{label:'Dato', data:[10,20,15], borderColor:'#2ecc71'}]}}); }, 100);
         }
 
@@ -337,3 +337,4 @@
     </script>
 </body>
 </html>
+                
