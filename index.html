@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AXhSXLRw6-ZowgsppM3kgWrNRL-Rj5zwex2T9IN_dmPN1heY1gVoWNS96lbHPoU75B8Fga0AUikt_HrZ&currency=MXN"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -48,7 +50,6 @@
         header { background: var(--nubo-green); padding: 10px 4%; position: sticky; top: 0; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .header-top { display: flex; align-items: center; justify-content: space-between; gap: 15px; position: relative; z-index: 10001; }
         
-        /* LOGO HEADER OPTIMIZADO */
         .logo-img { 
             height: 65px; 
             width: 65px; 
@@ -116,7 +117,6 @@
         .legal-links { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 15px; font-size: 11px; }
         .legal-links a { color: white; text-decoration: none; opacity: 0.9; cursor: pointer; }
 
-        /* LOGO FOOTER OPTIMIZADO */
         .logo-footer {
             height: 65px;
             width: 65px;
@@ -193,6 +193,17 @@
     </footer>
 
     <script>
+        // ==========================================
+        // 🔑 ZONA DE LLAVES BONÜ (Pon aquí tus keys)
+        // ==========================================
+        const BONU_KEYS = {
+            paypal:      "AXhSXLRw6-ZowgsppM3kgWrNRL-Rj5zwex2T9IN_dmPN1heY1gVoWNS96lbHPoU75B8Fga0AUikt_HrZ", // CAMBIO 2: Pega aquí tu Clave API
+            mercadoPago: "APP_USR-206b2ba1-75c9-419e-b44f-387bf107b7f4",
+            stripe:      "TU_STRIPE_PUBLIC_KEY_AQUÍ",
+            bonuPay:     "APP_USR-206b2ba1-75c9-419e-b44f-387bf107b7f4" 
+        };
+        // ==========================================
+
         let cart = [];
         let isAffiliate = false, isVendor = false;
         const cats = ["Ropa de hombre", "Ropa de mujer", "Accesorios", "Belleza", "Salud", "Hogar", "Deportes", "Electrónicos", "Juguetes", "Ofertas", "Promociones", "Remates", "SuperNubo"];
@@ -256,7 +267,9 @@
         }
 
         function renderCheckoutForm(method) {
-            document.getElementById('page-content').innerHTML = `
+            const subtotal = cart.reduce((acc, item) => acc + parseFloat(item.price), 0);
+            
+            let content = `
                 <h2>Finalizar Compra (${method})</h2>
                 <div class="admin-section">
                     <h3>📍 Datos de Envío</h3>
@@ -269,30 +282,51 @@
                         <input type="text" class="admin-input" placeholder="Estado/Provincia">
                         <input type="text" class="admin-input" placeholder="País">
                         <input type="tel" class="admin-input" placeholder="Teléfono">
-                        <input type="email" class="admin-input" placeholder="Correo electrónico">
+                        <input type="email" id="form-checkout__cardholderEmail" class="admin-input" placeholder="Correo electrónico">
                         <textarea class="admin-input" style="grid-column: span 2; height:80px;" placeholder="Describe tu ubicación o domicilio"></textarea>
-                    </div>
-                    
-                    <div style="margin:20px 0; display:flex; align-items:center; gap:10px;">
-                        <input type="checkbox" id="same-billing" checked onchange="document.getElementById('billing-form').style.display = this.checked ? 'none' : 'grid'">
-                        <label for="same-billing" style="font-size:12px; font-weight:700;">Mismos datos para facturación</label>
-                    </div>
+                    </div>`;
 
-                    <div id="billing-form" class="form-grid" style="display:none; border-top:1px solid #eee; padding-top:20px;">
-                        <h3>🧾 Datos de Facturación</h3>
-                        <div class="form-grid" style="grid-column: span 2;">
-                            <input type="text" class="admin-input" placeholder="Nombre/Razón Social">
-                            <input type="text" class="admin-input" placeholder="RFC/NIF/TAX/CIF">
-                            <input type="text" class="admin-input" placeholder="Dirección Fiscal">
-                            <input type="text" class="admin-input" placeholder="Ciudad">
-                            <input type="text" class="admin-input" placeholder="CP">
-                            <input type="text" class="admin-input" placeholder="Estado">
-                            <input type="text" class="admin-input" placeholder="País">
-                            <input type="tel" class="admin-input" placeholder="Teléfono">
-                            <input type="email" class="admin-input" placeholder="Correo">
-                        </div>
-                    </div>
-
+            // CAMBIO 3: LÓGICA INTEGRADA PARA BONÜPAY Y PAYPAL
+            if (method === 'BonuPay') {
+                content += `
+                    <div style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
+                        <h3>💳 BonüPay (Marca Propia)</h3>
+                        <form id="form-checkout">
+                            <label class="admin-label">Número de Tarjeta</label>
+                            <div id="form-checkout__cardNumber" class="admin-input" style="height:45px; background:white;"></div>
+                            <div style="display:flex; gap:10px;">
+                                <div style="flex:1">
+                                    <label class="admin-label">Expiración</label>
+                                    <div id="form-checkout__expirationDate" class="admin-input" style="height:45px; background:white;"></div>
+                                </div>
+                                <div style="flex:1">
+                                    <label class="admin-label">CVV</label>
+                                    <div id="form-checkout__securityCode" class="admin-input" style="height:45px; background:white;"></div>
+                                </div>
+                            </div>
+                            <input type="text" id="form-checkout__cardholderName" class="admin-input" placeholder="Nombre del Titular">
+                            <select id="form-checkout__issuer" class="admin-input"></select>
+                            <select id="form-checkout__installments" class="admin-input"></select>
+                            <button type="submit" id="form-checkout__submit" class="btn-add btn-super" style="height:50px; font-size:16px; margin-top:20px;">PAGAR $${subtotal.toFixed(2)} CON BONÜPAY</button>
+                        </form>
+                    </div>`;
+            } else if (method === 'PayPal') {
+                content += `<div id="paypal-button-container" style="margin-top:20px;"></div>`;
+                setTimeout(() => {
+                    paypal.Buttons({
+                        createOrder: (data, actions) => {
+                            return actions.order.create({ purchase_units: [{ amount: { value: subtotal.toFixed(2) } }] });
+                        },
+                        onApprove: (data, actions) => {
+                            return actions.order.capture().then(details => {
+                                alert('¡Pago exitoso, ' + details.payer.name.given_name + '! Gracias por comprar en Bonü.');
+                                cart = []; showHome();
+                            });
+                        }
+                    }).render('#paypal-button-container');
+                }, 100);
+            } else {
+                content += `
                     <div style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
                         <h3>💳 Datos de Tarjeta</h3>
                         <div class="form-grid">
@@ -302,9 +336,42 @@
                             <input type="text" class="admin-input" placeholder="CVV">
                         </div>
                     </div>
-                    
-                    <button class="btn-add btn-super" style="height:50px; font-size:16px; margin-top:20px;" onclick="alert('¡Compra Procesada con Éxito!')">FINALIZAR COMPRA</button>
-                </div>`;
+                    <button class="btn-add btn-super" style="height:50px; font-size:16px; margin-top:20px;" onclick="alert('¡Compra Procesada con ${method}!')">FINALIZAR COMPRA</button>`;
+            }
+
+            content += `</div>`;
+            document.getElementById('page-content').innerHTML = content;
+
+            if (method === 'BonuPay') {
+                initBonuPay(subtotal);
+            }
+        }
+
+        // --- LÓGICA DE BONÜPAY (MERCADO PAGO API) ---
+        function initBonuPay(amount) {
+            const mp = new MercadoPago(BONU_KEYS.bonuPay);
+            const cardForm = mp.cardForm({
+                amount: amount.toString(),
+                iframe: true,
+                form: {
+                    id: "form-checkout",
+                    cardNumber: { id: "form-checkout__cardNumber", placeholder: "0000 0000 0000 0000" },
+                    expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/AA" },
+                    securityCode: { id: "form-checkout__securityCode", placeholder: "CVV" },
+                    cardholderName: { id: "form-checkout__cardholderName" },
+                    issuer: { id: "form-checkout__issuer" },
+                    installments: { id: "form-checkout__installments" },
+                    cardholderEmail: { id: "form-checkout__cardholderEmail" },
+                },
+                callbacks: {
+                    onFormMounted: error => { if (error) console.warn("Error MP:", error); },
+                    onSubmit: event => {
+                        event.preventDefault();
+                        const { token } = cardForm.getCardFormData();
+                        alert("¡BonüPay ha verificado tu tarjeta!\nToken generado: " + token);
+                    },
+                },
+            });
         }
 
         function accessAdmin() { if(prompt("Clave Maestro:") === "LOBO1203@") renderAdmin(); }
@@ -312,7 +379,7 @@
             document.getElementById('home-view').style.display = 'none';
             document.getElementById('page-view').style.display = 'block';
             let cont = document.getElementById('page-content');
-            cont.innerHTML = `<h2>Admin General</h2><div class="admin-section"><h3>➕ Agregar Nuevo Producto</h3><div class="form-grid"><div style="grid-column: span 2;"><label class="admin-label">Imágenes (6 máx)</label><input type="file" multiple class="admin-input"></div><input type="text" class="admin-input" placeholder="Nombre del producto"><input type="number" class="admin-input" placeholder="Precio"><input type="text" class="admin-input" placeholder="Tallas"><input type="text" class="admin-input" placeholder="Colores"><input type="text" class="admin-input" placeholder="Medidas"><select class="admin-input"><option>Sin Descuento</option>${[10,15,20,25,30,35,40,45,50].map(d => `<option>${d}% de Descuento</option>`).join('')}</select><textarea class="admin-input" placeholder="Descripción" style="grid-column: span 2; height: 80px;"></textarea></div><button class="btn-add btn-super">AGREGAR PRODUCTO</button></div><div class="admin-section"><h3>📊 Analíticas</h3><div class="form-grid">${Array(11).fill().map((_,i)=>`<div><div style="display:flex; gap:5px; margin-bottom:5px;"><input type="date" class="admin-input" style="font-size:10px; padding:5px;"><input type="date" class="admin-input" style="font-size:10px; padding:5px;"></div><canvas id="gr-${i}"></canvas></div>`).join('')}</div></div><div class="admin-section"><h3>💳 Keys Pago</h3><div class="form-grid"><input type="password" class="admin-input" placeholder="PayPal Key"><input type="password" class="admin-input" placeholder="Mercado Pago Key"><input type="password" class="admin-input" placeholder="Stripe Key"><input type="password" class="admin-input" placeholder="BonuPay Key"></div></div>`;
+            cont.innerHTML = `<h2>Admin General</h2><div class="admin-section"><h3>➕ Agregar Nuevo Producto</h3><div class="form-grid"><div style="grid-column: span 2;"><label class="admin-label">Imágenes (6 máx)</label><input type="file" multiple class="admin-input"></div><input type="text" class="admin-input" placeholder="Nombre del producto"><input type="number" class="admin-input" placeholder="Precio"><input type="text" class="admin-input" placeholder="Tallas"><input type="text" class="admin-input" placeholder="Colores"><input type="text" class="admin-input" placeholder="Medidas"><select class="admin-input"><option>Sin Descuento</option>${[10,15,20,25,30,35,40,45,50].map(d => `<option>${d}% de Descuento</option>`).join('')}</select><textarea class="admin-input" placeholder="Descripción" style="grid-column: span 2; height: 80px;"></textarea></div><button class="btn-add btn-super">AGREGAR PRODUCTO</button></div><div class="admin-section"><h3>📊 Analíticas</h3><div class="form-grid">${Array(11).fill().map((_,i)=>`<div><div style="display:flex; gap:5px; margin-bottom:5px;"><input type="date" class="admin-input" style="font-size:10px; padding:5px;"><input type="date" class="admin-input" style="font-size:10px; padding:5px;"></div><canvas id="gr-${i}"></canvas></div>`).join('')}</div></div><div class="admin-section"><h3>💳 Keys Pago</h3><div class="form-grid"><input type="password" class="admin-input" placeholder="PayPal Key" value="${BONU_KEYS.paypal}"><input type="password" class="admin-input" placeholder="Mercado Pago Key" value="${BONU_KEYS.mercadoPago}"><input type="password" class="admin-input" placeholder="Stripe Key" value="${BONU_KEYS.stripe}"><input type="password" class="admin-input" placeholder="BonuPay Key" value="${BONU_KEYS.bonuPay}"></div></div>`;
             setTimeout(() => { for(let i=0; i<11; i++) new Chart(document.getElementById(`gr-${i}`), {type:'line', data:{labels:['1','2','3'], datasets:[{label:'Dato', data:[10,20,15], borderColor:'#2ecc71'}]}}); }, 100);
         }
 
@@ -359,3 +426,4 @@
     </script>
 </body>
 </html>
+    
