@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -45,15 +45,26 @@
         body.dark-mode { background-color: #121212; color: #fff; }
         body.dark-mode .card, body.dark-mode .admin-section, body.dark-mode .cat-nav { background: #1e1e1e; border-color: #333; color: white; }
 
-        header { background: var(--nubo-green); padding: 12px 4%; position: sticky; top: 0; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative; z-index: 10001; }
-        .logo-img { height: 50px; cursor: pointer; border-radius: 50%; background: white; padding: 2px; }
+        header { background: var(--nubo-green); padding: 10px 4%; position: sticky; top: 0; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .header-top { display: flex; align-items: center; justify-content: space-between; gap: 15px; position: relative; z-index: 10001; }
+        
+        /* LOGO CIRCULAR OPTIMIZADO */
+        .logo-img { 
+            height: 75px; 
+            width: 75px; 
+            cursor: pointer; 
+            border-radius: 50%; 
+            background: vibrant green; 
+            object-fit: cover; 
+            border: 0px solid orange;
+            flex-shrink: 0;
+        }
         
         .search-container { flex-grow: 1; position: relative; max-width: 500px; }
         .search-container input { width: 100%; padding: 12px 15px 12px 45px; border-radius: 25px; border: none; outline: none; }
         .search-container i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; width: 18px; pointer-events: none; }
 
-        .header-icons { display: flex; gap: 15px; color: white; }
+        .header-icons { display: flex; gap: 15px; color: white; align-items: center; }
         .icon-btn { cursor: pointer; position: relative; display: flex; align-items: center; z-index: 10002; }
         .badge { position: absolute; top: -8px; right: -8px; background: var(--ofertas); color: white; font-size: 11px; padding: 2px 6px; border-radius: 10px; border: 2px solid var(--nubo-green); }
 
@@ -113,7 +124,7 @@
 
     <header>
         <div class="header-top">
-            <img src="https://i.ibb.co/KcF5cycr/1770748847094.png." class="logo-img" onclick="showHome()">
+            <img src="https://i.ibb.co/KcF5cycr/1770748847094.png" class="logo-img" onclick="showHome()">
             <div class="search-container">
                 <i data-lucide="search"></i>
                 <input type="text" placeholder="Buscar en Bonü...">
@@ -155,7 +166,7 @@
     </div>
 
     <footer>
-        <img src="https://i.ibb.co/LzNf9f4/nubo-logo.png" style="height:40px; border-radius:50%; background:white; padding:2px;">
+        <img src="https://i.ibb.co/KcF5cycr/1770748847094.png" style="height:65px; width:65px; border-radius:50%; background:vibrant green; object-fit:cover; border:0px solid orange;">
         <p style="margin-top:10px;">+52 322 270 0732 | bonu.marketplace@gmail.com</p>
         <div class="legal-links">
             <a onclick="renderLegal('terminos')">Términos y Condiciones</a> | 
@@ -337,4 +348,3 @@
     </script>
 </body>
 </html>
-                
